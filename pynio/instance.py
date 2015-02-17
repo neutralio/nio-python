@@ -1,3 +1,5 @@
+import requests
+
 from pynio.rest import REST
 from pynio.block import Block
 from pynio.service import Service
@@ -9,7 +11,9 @@ class Instance(REST):
 
     def __init__(self, host='127.0.0.1', port=8181, creds=None):
         super().__init__(host, port, creds)
+        self.reset()
 
+    def reset(self):
         self.blocks = self._get_blocks()
         self.services = self._get_services()
 
@@ -45,3 +49,14 @@ class Instance(REST):
                                   config=resp[s],
                                   instance=self)
         return services
+
+    def DELETE_ALL(self):
+        '''Deletes all blocks and services from an instance
+        regardless of whether or not they can be loaded and does
+        a reset'''
+        blocks, services = self._get('blocks'), self._get('services')
+        for b in blocks:
+            self._delete('blocks/{}'.format(b))
+        for s in services:
+            self._delete('services/{}'.format(s))
+        self.reset()
