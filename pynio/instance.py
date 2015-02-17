@@ -1,8 +1,7 @@
-import requests
-
-from pynio.rest import REST
-from pynio.block import Block
-from pynio.service import Service
+from .rest import REST
+from .block import Block
+from .service import Service
+from .progress import ProgressBar
 
 
 class Instance(REST):
@@ -50,6 +49,16 @@ class Instance(REST):
                                   instance=self)
         return services
 
+    def start(self, services):
+        '''Start an iterator of services as fast as possible'''
+        for s in ProgressBar('Starting:')(services):
+            s.start()
+
+    def stop(self, services):
+        '''Stop an iterator of services as fast as possible'''
+        for s in ProgressBar('Stopping:')(services):
+            s.stop()
+
     def DELETE_ALL(self):
         '''Deletes all blocks and services from an instance
         regardless of whether or not they can be loaded and does
@@ -58,5 +67,6 @@ class Instance(REST):
         for b in blocks:
             self._delete('blocks/{}'.format(b))
         for s in services:
+            self._get('services/{}/stop'.format(s))
             self._delete('services/{}'.format(s))
         self.reset()
