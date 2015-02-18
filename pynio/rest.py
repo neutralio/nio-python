@@ -26,6 +26,7 @@ class REST(object):
                                 timeout=timeout,
                                 data=data)
                 r.raise_for_status()
+                break
             except requests.exceptions.ConnectionError as e:
                 log.warning("Failure connecting in _get")
                 E = e
@@ -69,19 +70,22 @@ class Request(object):
     '''Given a REST object, make a request of nio with a bunch of
     error checking'''
     transition = {None, 'starting', 'stopping', 'configuring',
-                  'configured'},
-    transition_start = {'started', 'stopped'},
+                  'configured'}
+    transition_start = {'started', 'stopped'}
 
-    def __init__(self, rest, url, retry=5,
+    def __init__(self, service, call, retry=5,
                  **kwargs):
         self.done = False
-        self.rest = rest
+        self.service = service
         try:
-            rest._get(url, retry=retry, **kwargs)
-        except requests.exceptions.HttpError:
-            pass
+            call(timeout=(3, 0.01))  # Connection Timeout, Request timeout
+            self.done = True
         except requests.exceptions.Timeout:
-            pass
+            pass  # intended
+        except requests.exceptions.ConnectTimeout:
+            log.error("Connection failure in init of Response")
+            time.sleep(0.5)
+            call(timeout=1)
 
     def complete(self, status,
                  transition=None, transition_start=None,
@@ -90,6 +94,8 @@ class Request(object):
         until they are no longer in that set. Then it allows statuses
         to be in transition. If it falls outside of these, an error
         is raised'''
+        if self.done:
+            return True
         transition = transition if transition is not None else self.transition
         transition_start = (transition_start if transition_start is not None
                             else self.transition_start)
@@ -97,25 +103,23 @@ class Request(object):
         while True:
             for _ in range(5):
                 try:
-                    s = self.rest.status()
+                    s = self.service.status  # ; print('Status:', s)
                     break
-                except requests.exception.HttpError as E:
-                    exc = E
-                    continue
                 except Exception as E:
-                    log.warning("Unhandled exception while completing req:\n",
+                    log.warning("Unhandled exception while getting status:\n",
                                 exc_info=True)
                     exc = E
+                    time.sleep(1)
                     continue
             else:
                 raise exc
             if s == status:
                 return True  # got expected status
-            elif status in transition_start and starting:
+            elif starting and s in transition_start:
                 pass  # object is still starting
-            elif status in transition:
+            elif s in transition:
                 starting = False  # request has been received, in transition
             else:
                 raise RequestError("Invalid status: {}, want: {}".
                                    format(s, status))
-            time.sleep(1)
+            time.sleep(0.5)
