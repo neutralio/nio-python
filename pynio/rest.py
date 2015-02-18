@@ -19,18 +19,19 @@ class REST(object):
         '''Performs a get with some amounts of retrys'''
         if data is not None:
             data = json.dumps(data)
-        for _ in range(retry + 1):
+        for i in range(retry + 1):
             try:
                 r = requests.get(self._url.format(endpoint),
-                                auth=self._creds,
-                                timeout=timeout,
-                                data=data)
+                                 auth=self._creds,
+                                 timeout=timeout,
+                                 data=data)
                 r.raise_for_status()
                 break
             except requests.exceptions.ConnectionError as e:
                 log.warning("Failure connecting in _get")
                 E = e
-            time.sleep(1)
+                if i < retry:
+                    time.sleep(1)
         else:
             raise E
         return r.json()
