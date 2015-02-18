@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from pynio.service import Service
+from ..pynio.service import Service
 
 
 class TestBlock():

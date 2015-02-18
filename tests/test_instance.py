@@ -1,5 +1,5 @@
 import unittest
-from pynio import Instance
+from ..pynio import Instance
 from unittest.mock import MagicMock, patch
 
 class TestInstance(unittest.TestCase):

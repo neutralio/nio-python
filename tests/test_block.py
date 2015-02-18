@@ -1,5 +1,5 @@
 import unittest
-from pynio import Block
+from ..pynio import Block
 from unittest.mock import MagicMock, patch
 
 class TestBlock(unittest.TestCase):

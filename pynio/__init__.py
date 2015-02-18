@@ -1,3 +1,3 @@
-from pynio.instance import Instance
-from pynio.block import Block
-from pynio.service import Service
+from .instance import Instance
+from .block import Block
+from .service import Service
