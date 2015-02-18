@@ -6,9 +6,9 @@ import unittest
 from .example_data import (SimulatorFastTemplate, SimulatorFastConfig,
                            SimulatorTemplate, SimulatorConfig)
 
-from pynio.properties import (AttrDict, SolidDict,
-                              TypedDict, TypedList, TypedEnum,
-                              load_block)
+from ..pynio.properties import (AttrDict,
+                                TypedDict, TypedList, TypedEnum,
+                                load_block)
 
 mystr = 'abcdefg'
 mydict = dict(zip(mystr, range(len(mystr))))
