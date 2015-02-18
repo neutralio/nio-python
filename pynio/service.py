@@ -26,7 +26,9 @@ class Service(object):
     def _put(self, endpoint, config):
         self._instance._put(endpoint, config)
 
-    def connect(self, blk1, blk2):
+    def connect(self, blk1, blk2=None):
+        '''Connect two blocks. Can also be used to add a block without
+        connecting it'''
         # initialize execution to an empty list if it doesn't already exist
         execution = self.config.get('execution', [])
         self.config['execution'] = execution
@@ -36,18 +38,20 @@ class Service(object):
             if blk['name'] == blk1.name:
                 connection = blk
                 break
-        for blk in execution:
-            if blk['name'] == blk2.name:
-                break
-        else:
-            # block2 doesn't exist, so add it
-            execution.append({'name': blk2.name, 'receivers': []})
+        if blk2 is not None:
+            for blk in execution:
+                if blk['name'] == blk2.name:
+                    break
+            else:
+                # block2 doesn't exist, so add it
+                execution.append({'name': blk2.name, 'receivers': []})
 
         # if block exists, add the receiever, otherwise init connection
+        receivers = [] if blk2 is None else [blk2.name]
         if connection:
-            connection['receivers'].append(blk2.name)
+            connection['receivers'].extend(receivers)
         else:
-            connection = {'name': blk1.name, 'receivers': [blk2.name]}
+            connection = {'name': blk1.name, 'receivers': receivers}
             execution.append(connection)
 
     def _remove(self, block):
@@ -70,9 +74,9 @@ class Service(object):
 
         execution[:] = [c for c in execution if clean(c)]
 
-    def start(self):
+    def start(self, timeout=None):
         """ Starts the nio Service. """
-        self.command('start')
+        self.command('start', timeout=timeout)
 
     def stop(self):
         """ Stops the nio Service. """
@@ -97,6 +101,12 @@ class Service(object):
             return get('services/{}/{}/{}'.format(self._name, block._name,
                                                   command),
                        **request_kwargs)
+
+    def create_block(self, name, type, config=None):
+        blk = Block(name, type, config=config, instance=self._instance)
+        self.connect(blk)
+        if self._instance:
+            self.save()
 
     def _status(self):
         """ Returns the status of the Service. """

@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 from copy import deepcopy
 
-from pynio import Block
+from ..pynio import Block
 from .mock import mock_instance
 
 
