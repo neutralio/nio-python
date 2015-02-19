@@ -21,8 +21,8 @@ template = {
 }
 
 config = {
-    'name': '',
-    'type': 'template',
+    'name': 'name',
+    'type': 'type',
     'value': 0
 }
 

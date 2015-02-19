@@ -13,7 +13,7 @@ class Block(object):
         self._name = name
         self._type = type
         self._template = None
-        self._config = config or {}
+        self._config = deepcopy(config) or {}
         self._instance = instance
 
     def save(self):
@@ -63,10 +63,10 @@ class Block(object):
 
     @config.setter
     def config(self, value):
-        if self._template is None:
+        if self.template is None:
             self._config = value
             return
-        config = deepcopy(self._template)
+        config = deepcopy(self.template)
         config.readonly = False
         config.update(value, drop_unknown=True,
                       drop_logger=self._instance.droplog)
@@ -89,7 +89,7 @@ class Block(object):
         template.type = type
         template.name = ''
         template.readonly = True
-        self._template = template
+        self.template = template
         self.config = self._config  # reload own config with new template
 
     def delete(self):
