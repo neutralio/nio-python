@@ -58,8 +58,6 @@ class TestService(unittest.TestCase):
         self.assertFalse(instance.droplog.called)
         self.assertDictEqual(c, blk.json())
 
-
-
     def test_connect_one_to_two(self):
         s = Service('name', 'type')
         s.connect(TestBlock('one'), TestBlock('two'))
