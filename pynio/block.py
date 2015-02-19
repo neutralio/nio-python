@@ -31,7 +31,8 @@ class Block(object):
         config['name'] = self._name
         config['type'] = self._type
         # load template and then reload config
-        self.template = self._instance.blocks_types[self._type].template
+        # self.template = self._instance.blocks_types[self._type].template
+        self.template = self._instance.blocks_types[self._type]
         self.config = config
         # put onto the web
         self._put('blocks/{}'.format(self._name), self.json())

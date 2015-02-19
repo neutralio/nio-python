@@ -5,6 +5,7 @@ import unittest
 
 from .example_data import (SimulatorFastTemplate, SimulatorFastConfig,
                            SimulatorTemplate, SimulatorConfig)
+from .mock import template, config
 
 from pynio.properties import (AttrDict, SolidDict,
                               TypedDict, TypedList, TypedEnum,
@@ -124,35 +125,10 @@ class TestTypedEnum(unittest.TestCase):
         self.assertEqual(venum.__get__(None, None), 'b')
 
 
-template = {
-    'name': 'template',
-    'properties': {
-        'name': {
-            'type': 'str',
-            'title': None,
-        },
-        'type': {
-            "type": "str",
-            "title": None
-        },
-        'value': {
-            'type': 'int',
-            'title': 'Value',
-            'default': 0
-        }
-    }
-}
-
-config = {
-    'name': '',
-    'type': 'template',
-    'value': 0
-}
-
-
 class TestLoadProperties(unittest.TestCase):
     def test_load_simple(self):
-        blk = load_block(template, 'template')
+        blk = load_block(template, 'type')
+        blk.name = 'name'
         self.assertEqual(blk.__basic__(), config)
 
     def test_load_list(self):
@@ -170,7 +146,8 @@ class TestLoadProperties(unittest.TestCase):
                 }
             }
         }
-        blk = load_block(t, 'template')
+        blk = load_block(t, 'type')
+        blk.name = 'name'
         c = deepcopy(config)
         c['attributes'] = []
         self.assertEqual(blk.__basic__(), c)
@@ -186,7 +163,8 @@ class TestLoadProperties(unittest.TestCase):
         self.assertEqual(blk.__basic__(), c)
 
         t['properties']['attributes']['default'] = default
-        blk = load_block(t, 'template')
+        blk = load_block(t, 'type')
+        blk.name = 'name'
         self.assertEqual(blk.__basic__(), c)
 
     def test_load_simulator_template(self):

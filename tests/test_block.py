@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from copy import deepcopy
 
 from pynio import Block
-from .mock import mock_instance
+from .mock import mock_instance, config
 
 
 class TestBlock(unittest.TestCase):
@@ -14,12 +14,8 @@ class TestBlock(unittest.TestCase):
             self.assertEqual(b.type, 'type')
 
         def test_save(self):
-            b = Block('name', 'type', {'key': 'val'})
-            b._instance = mock_instance({
-                'type': {'template': {
-                    'type': 'type', 'name': '', 'key': 'std'}
-                }
-            })
+            b = Block('name', 'type', config)
+            b._instance = mock_instance()
             b._put = MagicMock()
             b.save()
             self.assertTrue(b._put.called)
@@ -27,7 +23,7 @@ class TestBlock(unittest.TestCase):
             self.assertDictEqual(b._put.call_args[0][1],
                                  {'name': 'name',
                                   'type': 'type',
-                                  'key': 'val'})
+                                  'value': 0})
 
         def test_save_with_no_instance(self):
             b = Block('name', 'type')
