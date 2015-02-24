@@ -45,6 +45,7 @@ class TestREST(unittest.TestCase):
     @patch('time.sleep')
     @patch('requests.get')
     def test_get_retry(self, get, sleep):
+        print('\n[Expected] Some errors might print below:')
         raise_count = 4
         raises = iter_raise(requests.exceptions.ConnectionError,
                             raise_count, None)
