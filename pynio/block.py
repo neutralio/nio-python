@@ -103,10 +103,12 @@ class Block(object):
     def copy(self, name, instance=None):
         '''return a copy of self, but with a new name and not tied to
         any instance'''
+        if not name:
+            raise ValueError(name)
         out = copy(self)
         out._instance = instance
-        out._name = ''
-        out.config.name = out._name
+        out._name = name
+        out.config.name = name
         return out
 
 
