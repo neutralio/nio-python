@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from copy import deepcopy
 
 from pynio import Block
-from .mock import mock_instance
+from .mock import mock_instance, config, template
 
 
 class TestBlock(unittest.TestCase):
@@ -14,12 +14,8 @@ class TestBlock(unittest.TestCase):
             self.assertEqual(b.type, 'type')
 
         def test_save(self):
-            b = Block('name', 'type', {'key': 'val'})
-            b._instance = mock_instance({
-                'type': {'template': {
-                    'type': 'type', 'name': '', 'key': 'std'}
-                }
-            })
+            b = Block('name', 'type', config)
+            b._instance = mock_instance()
             b._put = MagicMock()
             b.save()
             self.assertTrue(b._put.called)
@@ -27,7 +23,7 @@ class TestBlock(unittest.TestCase):
             self.assertDictEqual(b._put.call_args[0][1],
                                  {'name': 'name',
                                   'type': 'type',
-                                  'key': 'val'})
+                                  'value': 0})
 
         def test_save_with_no_instance(self):
             b = Block('name', 'type')
@@ -63,6 +59,23 @@ class TestBlock(unittest.TestCase):
             self.assertRaises(ValueError, setattr,
                               b.config.interval, 'days', 'bad')
 
+        def test_load_config(self):
+            instance = mock_instance()
+            b = Block('name', 'type', config, instance=instance)
+            b.save()
+            self.assertDictEqual(b.json(), config)
+            self.assertTrue(instance._put.called)
+
+        def test_config_drop(self):
+            '''Ensure it drops non-existant settings'''
+            c = deepcopy(config)
+            c['notthere'] = 4
+            instance = mock_instance()
+            b = Block('name', 'type', c, instance=instance)
+            b.save()
+            self.assertDictEqual(b.json(), config)
+            self.assertTrue(instance._put.called)
+
         def test_load_all_templates(self):
             from .example_data import BlocksTemplatesAll
             instance = lambda: None
@@ -70,6 +83,7 @@ class TestBlock(unittest.TestCase):
             for btype, template in BlocksTemplatesAll.items():
                 b = Block(btype, btype)
                 b._load_template(btype, template, instance)
+
 
         def test_load_all_configs(self):
             from .example_data import BlocksTemplatesAll, BlocksConfigsAll
