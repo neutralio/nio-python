@@ -55,7 +55,7 @@ class Instance(REST):
         blocks = {}
         for bname, config in self._get('blocks').items():
             btype = config['type']
-            b = blocks_types[btype].copy('', instance=self)
+            b = blocks_types[btype].copy(bname, instance=self)
             b.config = config
             blocks[bname] = b
 
