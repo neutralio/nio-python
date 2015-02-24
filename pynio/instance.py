@@ -57,6 +57,7 @@ class Instance(REST):
             btype = config['type']
             b = blocks_types[btype].copy('', instance=self)
             b.config = config
+            b._name = config['name']  # TODO: finish `name` setter to use b.name
             blocks[bname] = b
 
         return blocks_types, blocks
