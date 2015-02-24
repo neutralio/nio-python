@@ -26,13 +26,19 @@ class AttrDict(dict):
 
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
-        # Make all internal dictionaries AttrDicts. Make sure this
+        # Make all internal dictionaries be own type. Make sure this
         # Overrides any super class's settings
         for key, value in self.items():
             if type(value) == dict:
                 dict.__setitem__(self, key, self.__class__(value))
 
     def update(self, value):
+        '''Update self from a value dictionary.
+
+        If values have their own `update` methods defined, values
+        are passed onto them. This allows values to choose how
+        they are updated and preserves pointers
+        '''
         if isinstance(value, dict):
             value = value.items()
         for key, value in value:
@@ -42,20 +48,30 @@ class AttrDict(dict):
                 self[key] = value
 
     def _get_attr(self, attr):
-        '''Convience function to bypass the special __getattribute__
-        funcitonality (specifically descriptors in items)'''
+        '''Bypass the special functionality of this class.
+
+        Convience function to bypass the special __getattribute__
+        funcitonality (specifically descriptors in items)
+        '''
         try:
             return object.__getattribute__(self, attr)
         except AttributeError:
             return self._get_item(attr)
 
     def _get_item(self, item):
-        '''Convinience function to pypass special machinery
-        (like descriptors in items)'''
+        '''Bypass the specfial functionality of this class.
+
+        Convinience function to pypass special machinery
+        (like descriptors in items)
+        '''
         return dict.__getitem__(self, item)
 
     def _get(self, obj):
-        '''Uses descriptors where possible'''
+        '''Uses descriptors where possible
+
+        Internal function to make sure all gotten objects are treated
+        the same.
+        '''
         if hasattr(obj, '__get__'):
             return obj.__get__(self)
         else:
@@ -71,8 +87,11 @@ class AttrDict(dict):
         dict.__setitem__(self, key, value)
 
     def __getattribute__(self, attr, keyonly=False):
-        '''Where all the magic happens. Allows for item assignment through
-        attribute notation'''
+        '''Where all the magic happens.
+
+        Allows for item assignment through attribute notation and makes sure
+        that object's descriptors are used
+        '''
         try:
             if keyonly: raise AttributeError
             # First try the standard attr lookup and return that
@@ -87,13 +106,20 @@ class AttrDict(dict):
         return self._get(obj)
 
     def __setattr__(self, attr, value, keyonly=False):
-        '''keyonly should only be used from __setitem__
-        It only looks inside the core dictionary keys'''
+        '''Overrides standard setattr to allow dictionary item assignment
+
+        Also makes sure descriptors are handled correctly.
+
+        Dev:
+            - keyonly only looks inside the dictionary keys (not attributes)
+        '''
         try:
             if keyonly:
-                raise AttributeError
+                raise AttributeError  # jump to lookup by key
             # make sure the attribute exists before we set it
             obj = object.__getattribute__(self, attr)
+            # actual attr setting does NOT use special features
+            #   (i.e. descriptors)
             object.__setattr__(self, attr, value)
             return
         except AttributeError:
@@ -103,7 +129,7 @@ class AttrDict(dict):
                 return self._set(attr, value)
 
         if hasattr(obj, '__set__'):
-            # print('setting __set__', obj, attr, value)
+            # If it is a descriptor object, let it handle everything else
             obj.__set__(self, value)
         else:
             self._set(attr, value)
@@ -118,10 +144,27 @@ class AttrDict(dict):
             raise KeyError from exc
 
     def __copy__(self, *args, **kwargs):
+        # necessary because of recursive errors
         return self.__class__(self)
 
     def __deepcopy__(self, *args, **kwargs):
-        return self.__class__({key: deepcopy(value) for (key, value) in self.items()})
+        # necessary because of recursive errors
+        return self.__class__({key: deepcopy(value) for (key, value)
+                               in self.items()})
+
+    def __basic__(self):
+        '''returns self in only basic python types.
+
+        *Should* be used for libraries like json'''
+        out = {}
+        for key in self:
+            value = dict.__getitem__(self, key)
+            if hasattr(value, '__basic__'):
+                value = value.__basic__()
+            elif hasattr(value, '__get__'):
+                value = value.__get__(self, self.__class__)
+            out[key] = value
+        return out
 
 
 class SolidDict(AttrDict):
@@ -141,15 +184,25 @@ class SolidDict(AttrDict):
 
 class TypedDict(AttrDict):
     '''Dictionary like object that keeps track of types. Choose whether
-        to attempt to convert types (default) or not allow different types.
-    Arguments:
-        convert: whether to attempt to convert values that don't match
+    to attempt to convert types (default) or not allow different types.
+
+    Keyword arguments:
+        convert -- whether to attempt to convert values that don't match
     '''
     def __init__(self, *args, convert=True, **kwargs):
         object.__setattr__(self, '_convert', convert)
         super().__init__(*args, **kwargs)
 
     def update(self, value, drop_unknown=False, drop_logger=None):
+        '''Update the dictionary from a value
+
+        Arguments:
+            drop_unknown -- drop keys that are not in the dictionary
+                otherwise an error will be raised
+            drop_logger -- this will be called on each drop with the
+                key passed in. When drop_unknown evaluates to false it
+                does nothing
+        '''
         if drop_unknown:
             newv = {}
             for key, value in value.items():
@@ -157,7 +210,7 @@ class TypedDict(AttrDict):
                     newv[key] = value
                 else:
                     if drop_logger is not None:
-                        drop_logger("Value Dropped: {}".format(key))
+                        drop_logger(key)
             value = newv
         return AttrDict.update(self, value)
 
@@ -172,13 +225,10 @@ class TypedDict(AttrDict):
         return value
 
     def __setitem__(self, item, value):
-        actual = self._get_item(item)
-        if hasattr(actual, '__set__'):
-            actual.__set__(None, value)
-            return
-        curval = self[item]
-        value = self._convert_value(value, curval)
-        AttrDict.__setitem__(self, item, value)
+        '''Do type conversions automatically.
+        If current value is a descriptor, allow it to handle everything
+        '''
+        self.__setattr__(item, value, keyonly=True)
 
     def __setattr__(self, attr, value, keyonly=False):
         if keyonly:
@@ -194,18 +244,6 @@ class TypedDict(AttrDict):
 
     def __set__(self, obj, value):
         raise TypeError("TypedDict is a protected member")
-
-    def __basic__(self):
-        '''returns self in only basic python types.'''
-        out = {}
-        for key in self:
-            value = dict.__getitem__(self, key)
-            if hasattr(value, '__basic__'):
-                value = value.__basic__()
-            elif hasattr(value, '__get__'):
-                value = value.__get__(self, self.__class__)
-            out[key] = value
-        return out
 
 
 class TypedList(list):
@@ -239,8 +277,11 @@ class TypedList(list):
         self.extend(new)
 
     def _convert_value(self, value):
+        '''Automatic type conversion. Uses update if it exists'''
         if hasattr(self._type, 'update'):
+            # Copy our type (think of it is a template)
             _type = deepcopy(self._type)
+            # update the values. Values not included will remain as the default
             _type.update(value)
             value = _type
         elif not isinstance(value, type):
@@ -248,10 +289,12 @@ class TypedList(list):
         return value
 
     def append(self, value):
+        '''Append a value. It is type checked first'''
         value = self._convert_value(value)
         list.append(self, value)
 
     def extend(self, iterator):
+        '''Extend self from an iterator, type checking every value'''
         for i in iterator:
             self.append(i)
 
@@ -266,7 +309,20 @@ class TypedList(list):
 
 
 class TypedEnum:
-    '''Class to make setting of enum types valid and error checked'''
+    '''Class to make setting of enum types valid and error checked
+
+    This class can be put in a Typed object. It allows you to reduce
+    the values that an attribute can be set to to only the values that
+    are in the enum. Other values will have ValueError raised on them
+
+    When setting, TypedEnum will first look in the enum itself, it will
+    then look in the enum names, and finally it will look in the enum values.
+    So if you have overlap, it will choose the name
+
+    When getting, TypedEnun always returns the associated Enum's name
+
+    See the unit tests for more examples
+    '''
     def __init__(self, enum, default=None):
         self._enum = enum
         self._enum_by_value = {e.value: e for e in enum}
@@ -305,7 +361,10 @@ class TypedEnum:
         self.value = value
 
 
-# Additional Properties
+'''
+Additional Properties for possible future type checking. Not currently
+    necessary -- TypedDict could be used for all of these
+'''
 class Properties(TypedDict):
     TYPE = 'properties'
 
@@ -317,10 +376,11 @@ class TimeDelta(TypedDict):
 class NioObject(TypedDict):
     TYPE = 'object'
 
-
 TypedList.TYPE = 'list'
 TypedEnum.TYPE = 'select'
 
+
+'''Loader functions for nio configurations.'''
 
 def load_block(template, type=None):
     '''Parsing function to load a block from a template dictionary'''
@@ -332,6 +392,7 @@ def load_block(template, type=None):
 
 
 def load_properties(properties, obj=Properties):
+    '''Used for loading templates that are dictionary-like'''
     out = {}
     for key, value in properties.items():
         out[key] = load_template(value)
@@ -340,6 +401,10 @@ def load_properties(properties, obj=Properties):
 
 # Functions to go into PROPERTIES
 def load_template(template):
+    '''Used for loading any sub template.
+
+    Uses the PROPERTIES dictionary to find loader functions for any type
+    '''
     try:
         hastype = 'type' in template
     except TypeError:
@@ -358,6 +423,7 @@ def load_template(template):
 
 
 def load_list(template):
+    '''Specifically used for the "list" type'''
     default = template.get('default', [])
     if 'type' not in template:
         # Lists have an interesting feature where they assume you know

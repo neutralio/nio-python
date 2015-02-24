@@ -1,5 +1,10 @@
-import requests
+import logging
 import json
+import time
+
+import requests
+
+log = logging.getLogger(__name__)
 
 
 class REST(object):
@@ -12,14 +17,25 @@ class REST(object):
         self._creds = creds or ('User', 'User')
         self._url = 'http://{}:{}/{}'.format(host, port, '{}')
 
-    def _get(self, endpoint, timeout=None, data=None):
+    def _get(self, endpoint, timeout=None, data=None, retry=0):
+        '''Performs a get with some amounts of retrys'''
         if data is not None:
             data = json.dumps(data)
-        r = requests.get(self._url.format(endpoint),
-                         auth=self._creds,
-                         timeout=timeout,
-                         data=data)
-        r.raise_for_status()
+        for i in range(retry + 1):
+            try:
+                r = requests.get(self._url.format(endpoint),
+                                 auth=self._creds,
+                                 timeout=timeout,
+                                 data=data)
+                r.raise_for_status()
+                break
+            except requests.exceptions.ConnectionError as e:
+                log.warning("Failure connecting in _get")
+                E = e
+                if i < retry:
+                    time.sleep(1)
+        else:
+            raise E
         return r.json()
 
     def _put(self, endpoint, config=None, timeout=None):

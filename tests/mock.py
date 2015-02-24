@@ -39,3 +39,14 @@ def mock_instance(type=template):
         'type': properties.load_block(type)
     }
     return instance
+
+
+def mock_service():
+    service = MagicMock(spec=[
+        'start', 'stop', 'delete', 'command'])
+    service.start = MagicMock()
+    service.stop = MagicMock()
+    service.stop = MagicMock()
+    service.delete = MagicMock()
+    service.command = MagicMock()
+    return service
