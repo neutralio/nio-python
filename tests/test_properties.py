@@ -123,6 +123,15 @@ class TestTypedEnum(unittest.TestCase):
         venum.__set__(None, 1)
         self.assertEqual(venum.__get__(None, None), 'b')
 
+    def test_setting_enum(self):
+        '''enum should be able to be set with another enum object'''
+        venum = TypedEnum(abc)
+        venum2 = TypedEnum(abc)
+        venum2.__set__(None, 'b')
+        venum.__set__(None, venum2)
+        self.assertEqual(venum.value, venum2.value)
+        self.assertEqual(venum.value, 1)
+
 
 template = {
     'name': 'template',

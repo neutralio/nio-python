@@ -358,6 +358,8 @@ class TypedEnum:
         return self._value.name
 
     def __set__(self, obj, value):
+        if hasattr(value, '__get__'):
+            value = value.__get__(None, None)
         self.value = value
 
 
