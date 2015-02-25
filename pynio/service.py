@@ -1,3 +1,4 @@
+from operator import itemgetter
 from copy import deepcopy
 from .block import Block
 
@@ -155,3 +156,15 @@ class Service(object):
     @property
     def pid(self):
         return self._status()['pid']
+
+    def __str__(self):
+        # get connections, ones with most connections first
+        execution = sorted(self.config.get('execution', []),
+                           key=lambda i: len(i['receivers']),
+                           reverse=True)
+        name_fmat = '{} --> ({})'.format
+        outstr = []
+        outstr = [name_fmat(i['name'], ', '.join(i['receivers'])) for i in
+                   execution]
+        return ('Service {} Connections:\n  '.format(self.name) +
+                '\n  '.join(outstr) + '\n')
