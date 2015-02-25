@@ -5,6 +5,22 @@ from pynio import Instance, Block, Service
 from unittest.mock import MagicMock, patch
 from .mock import mock_service, mock_instance, config, template
 
+def assertInstanceEqual(self, in1, in2):
+    ser1 = {sname: s.config for (sname, s) in in1.services.items()}
+    ser2 = {sname: s.config for (sname, s) in in2.services.items()}
+    self.assertDictEqual(ser1, ser2)
+    blks1 = {bname: b.json() for (bname, b) in in1.blocks.items()}
+    blks2 = {bname: b.json() for (bname, b) in in2.blocks.items()}
+    self.assertDictEqual(blks1, blks2)
+
+
+def assertInstanceNotEqual(self, in1, in2):
+    ser1 = {sname: s.config for (sname, s) in in1.services.items()}
+    ser2 = {sname: s.config for (sname, s) in in2.services.items()}
+    blks1 = {bname: b.json() for (bname, b) in in1.blocks.items()}
+    blks2 = {bname: b.json() for (bname, b) in in2.blocks.items()}
+    if ser1 == ser2 and blks1 == blks2:
+        self.fail()
 
 class MockInstance(Instance):
 
@@ -98,5 +114,6 @@ class TestInstance(unittest.TestCase):
         for n in range(10):
             notused.append(instance.create_block('bnotused{}'.format(n),
                                                  'type'))
+        assertInstanceNotEqual(self, instance, expected)
         instance.clean()
         assertInstanceEqual(self, instance, expected)
