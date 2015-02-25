@@ -162,7 +162,7 @@ class Service(object):
         execution = sorted(self.config.get('execution', []),
                            key=lambda i: len(i['receivers']),
                            reverse=True)
-        name_fmat = '{} --> ({})'.format
+        name_fmat = '{} --> {}'.format
         outstr = []
         outstr = [name_fmat(i['name'], ', '.join(i['receivers'])) for i in
                    execution]
