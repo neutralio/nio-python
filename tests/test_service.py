@@ -137,3 +137,13 @@ class TestService(unittest.TestCase):
         self.assertTrue(mm.called)
         self.assertEqual(mm.call_args[0][0],
                          'services/{}/{}/{}'.format('name', 'one', 'bar'))
+
+    def test_remove_block(self):
+        s = Service('name')
+        blk = TestBlock('one')
+        s.connect(blk, TestBlock('two'))
+        s.remove_block(blk)
+        execution = s.config['execution']
+        self.assertListEqual(execution, [
+            {'name': 'two', 'receivers': []}
+        ])

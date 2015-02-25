@@ -104,7 +104,7 @@ class Block(object):
         '''Delete self from instance and services'''
         self._instance._delete('blocks/{}'.format(self._name))
         for s in self._instance.services.values():
-            s._remove(self)
+            s.remove_block(self)
         self._instance.blocks.pop(self._name)
         self._instance = None  # make sure it isn't used anymore
 

@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock
-from pynio import properties, Block
+from pynio import properties, Block, Instance
 
 template = {
     'name': 'template',
@@ -27,14 +27,22 @@ config = {
 }
 
 
+class _Instance(Instance):
+    def __init__(self):
+        pass
+
+
 def mock_instance(type=template):
-    instance = MagicMock(spec=[
+    instance = MagicMock(wraps=_Instance, spec=[
         'config', 'droplog',
         'blocks', 'blocks_types', 'services',
-        '_put'])
+        '_put'])()
     instance.droplog = MagicMock()
     instance._put = MagicMock()
+    instance._get = MagicMock()
+    instance._delete = MagicMock()
     instance.blocks = {}
+    instance.services = {}
     b = Block('type', 'type', instance=instance)
     b._load_template('type', template)
     instance.blocks_types = {

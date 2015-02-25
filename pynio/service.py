@@ -58,7 +58,7 @@ class Service(object):
             connection = {'name': blk1.name, 'receivers': receivers}
             execution.append(connection)
 
-    def _remove(self, block):
+    def remove_block(self, block):
         '''remove a block from service. Does NOT delete the block'''
         execution = self.config.get('execution', None)
         if execution is None:  # no blocks
