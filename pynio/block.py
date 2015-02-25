@@ -118,3 +118,16 @@ class Block(object):
         out._name = name
         out.config['name'] = name
         return out
+
+    def in_use(self, instance=None):
+        '''returns a dictionary of services that use this block
+
+        If instance is None (default) uses it's own instance
+        '''
+        if instance is None:
+            instance = self._instance
+
+        name = self.name
+        return {sname: service for (sname, service) in instance.services.items()
+                if service.hasblock(name)}
+
