@@ -128,3 +128,10 @@ class TestBlock(unittest.TestCase):
             droplog = instance.droplog
             self.assertEqual(droplog.call_count, 2)
 
+        def test_in_use(self):
+            instance = mock_instance()
+            s = instance.create_service('foo')
+            instance.create_service('bar')
+            blk = s.create_block('one', 'type')
+            use = blk.in_use()
+            self.assertDictEqual(use, {'foo': s})

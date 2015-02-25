@@ -114,6 +114,13 @@ class Service(object):
             blk.save()
         return blk
 
+    def hasblock(self, block):
+        '''Returns True if the block name is a member of the service'''
+        if isinstance(block, Block):
+            block = block.name
+        return next((True for i in self.config.get('execution', []) if
+                      i['name'] == block), False)
+
     def _status(self):
         """ Returns the status of the Service. """
         return self._instance._get(
