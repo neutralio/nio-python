@@ -1,8 +1,26 @@
 import unittest
+from copy import deepcopy
+
 from pynio import Instance, Block, Service
 from unittest.mock import MagicMock, patch
 from .mock import mock_service, mock_instance, config, template
 
+def assertInstanceEqual(self, in1, in2):
+    ser1 = {sname: s.config for (sname, s) in in1.services.items()}
+    ser2 = {sname: s.config for (sname, s) in in2.services.items()}
+    self.assertDictEqual(ser1, ser2)
+    blks1 = {bname: b.json() for (bname, b) in in1.blocks.items()}
+    blks2 = {bname: b.json() for (bname, b) in in2.blocks.items()}
+    self.assertDictEqual(blks1, blks2)
+
+
+def assertInstanceNotEqual(self, in1, in2):
+    ser1 = {sname: s.config for (sname, s) in in1.services.items()}
+    ser2 = {sname: s.config for (sname, s) in in2.services.items()}
+    blks1 = {bname: b.json() for (bname, b) in in1.blocks.items()}
+    blks2 = {bname: b.json() for (bname, b) in in2.blocks.items()}
+    if ser1 == ser2 and blks1 == blks2:
+        self.fail()
 
 class MockInstance(Instance):
 
@@ -78,3 +96,24 @@ class TestInstance(unittest.TestCase):
         self.assertIsInstance(service, Service)
         self.assertIn(service.name, instance.services)
         self.assertIn(service, instance.services.values())
+
+    def test_clean(self):
+        instance = mock_instance()
+        s1 = instance.create_service('foo')
+        s2 = instance.create_service('bar')
+
+        # make some services, some connected blocks, some non
+        bused1 = s1.create_block('bused1', 'type')
+        bused2 = s1.create_block('bused2', 'type')
+        bused3 = s2.create_block('bused3', 'type')
+        s2.connect(bused2, bused3)
+        expected = deepcopy(instance)
+
+        # make some non-connected blocks
+        notused = []
+        for n in range(10):
+            notused.append(instance.create_block('bnotused{}'.format(n),
+                                                 'type'))
+        assertInstanceNotEqual(self, instance, expected)
+        instance.clean()
+        assertInstanceEqual(self, instance, expected)

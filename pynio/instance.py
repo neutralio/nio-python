@@ -103,3 +103,9 @@ class Instance(REST):
             self._get('services/{}/stop'.format(s))
             self._delete('services/{}'.format(s))
         self.reset()
+
+    def clean(self):
+        '''Removes all blocks that are not being used by any service'''
+        for b in tuple(self.blocks.values()):
+            if not b.in_use():
+                b.delete()
