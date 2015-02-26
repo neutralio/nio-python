@@ -116,6 +116,7 @@ class TestBlock(unittest.TestCase):
             b = Block(btype, btype)
             b._load_template(btype, template, instance)
             blocks_types[btype] = b
+            str(b)  # verify no error is raised
 
         blocks = {}
         for bname, config in BlocksConfigsAll.items():
@@ -124,6 +125,7 @@ class TestBlock(unittest.TestCase):
             b = deepcopy(blocks_types[btype])
             b.config = config
             blocks[bname] = b
+            str(b)  # verify no error is raised
 
         droplog = instance.droplog
         self.assertEqual(droplog.call_count, 2)
