@@ -132,4 +132,5 @@ class Block(object):
 
     def __str__(self):
         config = '\n  '.join(pprint.pformat(self.config).split('\n'))
-        return "Block {} config:\n  ".format(self.name) + config + '\n'
+        return ("Block({}, {}).config:{{\n  ".format(self.name, self.type) +
+                                        config + '\n}\n')

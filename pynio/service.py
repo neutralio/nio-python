@@ -166,5 +166,5 @@ class Service(object):
         outstr = []
         outstr = [name_fmat(i['name'], ', '.join(i['receivers'])) for i in
                    execution]
-        return ('Service {} Connections:\n  '.format(self.name) +
-                '\n  '.join(outstr) + '\n')
+        return ('Service({}).connections:{{\n  '.format(self.name) +
+                '\n  '.join(outstr) + '\n}\n')
