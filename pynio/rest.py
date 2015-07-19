@@ -35,7 +35,8 @@ class REST(object):
                 r = requests.get(self._url.format(endpoint),
                                  auth=self._creds,
                                  timeout=timeout,
-                                 data=data)
+                                 data=data,
+                                 **kwargs)
                 r.raise_for_status()
                 break
             except requests.exceptions.ConnectionError as e:
